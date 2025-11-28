@@ -6,6 +6,8 @@ import 'home/chats_page.dart';
 import 'home/updates_page.dart';
 import 'home/calls_page.dart';
 import 'home/settings_page.dart';
+import 'profile/username_setup_page.dart';
+import 'home/user_search_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +43,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/welcome': (_) => const WelcomePage(),
         '/email': (_) => const EmailAuthPage(),
+        '/username': (_) => const UsernameSetupPage(),
+        '/search': (_) => const UserSearchPage(),
       },
     );
   }
@@ -56,11 +60,95 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
         if (session != null) {
-          return const ChatHome();
+          // After sign-in, ensure the user has a profile username set.
+          return const _ProfileGate();
         }
         return const WelcomePage();
       },
     );
+  }
+}
+
+class _ProfileGate extends StatefulWidget {
+  const _ProfileGate();
+
+  @override
+  State<_ProfileGate> createState() => _ProfileGateState();
+}
+
+class _ProfileGateState extends State<_ProfileGate> {
+  bool _loading = true;
+  bool _hasUsername = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkProfile();
+  }
+
+  Future<void> _checkProfile() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) {
+      setState(() {
+        _loading = false;
+        _hasUsername = false;
+        _error = null;
+      });
+      return;
+    }
+    try {
+      final res = await client
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .maybeSingle();
+      final username = res != null ? (res['username'] as String?) : null;
+      setState(() {
+        _hasUsername = (username != null && username.trim().isNotEmpty);
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      debugPrint('[ProfileGate] error fetching profile: $e');
+      setState(() {
+        _hasUsername = false;
+        _loading = false;
+        _error = 'Could not read your profile. Check Supabase RLS policies for table "profiles".';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF111B21),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!_hasUsername) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF111B21),
+        body: Column(
+          children: [
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                color: Colors.redAccent.withOpacity(0.2),
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
+              ),
+            const Expanded(child: UsernameSetupPage()),
+          ],
+        ),
+      );
+    }
+    return const ChatHome();
   }
 }
 
@@ -96,7 +184,6 @@ class _HomeShellState extends State<HomeShell>
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
     return Scaffold(
       backgroundColor: const Color(0xFF0B141A),
       appBar: AppBar(
@@ -104,7 +191,12 @@ class _HomeShellState extends State<HomeShell>
         backgroundColor: const Color(0xFF1F2C33),
         title: const Text('Chitchat'),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.of(context).pushNamed('/search');
+            },
+          ),
           PopupMenuButton<String>(
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'settings', child: Text('Settings')),
