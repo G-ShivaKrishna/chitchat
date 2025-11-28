@@ -114,7 +114,10 @@ class _SignInPageState extends State<SignInPage> {
         password: password,
       );
       if (res.user != null) {
-        setState(() => _info = 'Account created. Check email for confirmation if required.');
+        setState(
+          () => _info =
+              'Account created. Check email for confirmation if required.',
+        );
       }
     } on AuthException catch (e) {
       setState(() => _error = _friendlyAuthError(e));
@@ -202,8 +205,11 @@ class _SignInPageState extends State<SignInPage> {
                         _info = null;
                       });
                       try {
-                        final version = await Supabase.instance.client.functions.invoke('health');
-                        setState(() => _info = 'Edge Function health: ${version.data}');
+                        final version = await Supabase.instance.client.functions
+                            .invoke('health');
+                        setState(
+                          () => _info = 'Edge Function health: ${version.data}',
+                        );
                       } catch (e) {
                         setState(() => _error = 'Health check failed: $e');
                       } finally {
