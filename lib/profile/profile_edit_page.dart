@@ -14,7 +14,9 @@ class ProfileEditPage extends StatefulWidget {
 
 class _ProfileEditPageState extends State<ProfileEditPage> {
   final _nameController = TextEditingController();
-  final _aboutController = TextEditingController(text: 'Hey there! I am using Chitchat');
+  final _aboutController = TextEditingController(
+    text: 'Hey there! I am using Chitchat',
+  );
 
   String? _email;
   String? _username;
@@ -53,7 +55,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           .maybeSingle();
       _username = row?['username'] as String?;
       _nameController.text = (row?['display_name'] as String?) ?? '';
-      _aboutController.text = (row?['about'] as String?) ?? _aboutController.text;
+      _aboutController.text =
+          (row?['about'] as String?) ?? _aboutController.text;
       _avatarUrl = row?['avatar_url'] as String?;
       setState(() {
         _loading = false;
@@ -87,7 +90,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final mime = lookupMimeType(file.name) ?? 'image/jpeg';
 
     try {
-      await client.storage.from('avatars').uploadBinary(
+      await client.storage
+          .from('avatars')
+          .uploadBinary(
             path,
             bytes,
             fileOptions: FileOptions(contentType: mime, upsert: true),
@@ -98,15 +103,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       });
     } on StorageException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Storage error: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Storage error: ${e.message}')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Avatar upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Avatar upload failed: $e')));
       }
     }
   }
@@ -181,7 +186,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text('Save'),
-          )
+          ),
         ],
       ),
       body: _loading
@@ -196,7 +201,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       color: Colors.redAccent.withOpacity(0.2),
-                      child: Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
                     ),
                   const SizedBox(height: 12),
                   Center(
@@ -204,8 +212,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       children: [
                         CircleAvatar(
                           radius: 48,
-                          backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
-                          child: _avatarUrl == null ? const Icon(Icons.person, size: 48) : null,
+                          backgroundImage: _avatarUrl != null
+                              ? NetworkImage(_avatarUrl!)
+                              : null,
+                          child: _avatarUrl == null
+                              ? const Icon(Icons.person, size: 48)
+                              : null,
                         ),
                         Positioned(
                           right: 0,
@@ -213,9 +225,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           child: FloatingActionButton.small(
                             onPressed: _pickAndUploadAvatar,
                             backgroundColor: const Color(0xFF25D366),
-                            child: const Icon(Icons.camera_alt, color: Colors.black),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.black,
+                            ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -247,27 +262,27 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   }
 
   Widget _label(String text) => Text(
-        text,
-        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
-      );
+    text,
+    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+  );
 
   Widget _roText(String text) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.white24.withOpacity(0.6)),
-          ),
-        ),
-        child: Text(text, style: const TextStyle(color: Colors.white)),
-      );
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+    decoration: BoxDecoration(
+      border: Border(
+        bottom: BorderSide(color: Colors.white24.withOpacity(0.6)),
+      ),
+    ),
+    child: Text(text, style: const TextStyle(color: Colors.white)),
+  );
 
   InputDecoration _inputDecoration() => const InputDecoration(
-        enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: Colors.white54),
-        ),
-      );
+    enabledBorder: UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.white24),
+    ),
+    focusedBorder: UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.white54),
+    ),
+  );
 }
