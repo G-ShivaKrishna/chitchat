@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -28,12 +29,26 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
       return;
     }
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      final stopwatch = Stopwatch()..start();
+      final response = await Supabase.instance.client.auth
+          .signInWithPassword(email: email, password: password)
+          .timeout(const Duration(seconds: 15), onTimeout: () {
+        throw TimeoutException('Sign-in timed out. Check connection.');
+      });
+      stopwatch.stop();
+      debugPrint('[Auth] Sign in completed in ${stopwatch.elapsedMilliseconds}ms; session: ${response.session != null}');
+      if (response.session == null) {
+        setState(() => _info = 'Signed in, but no session. Email confirmation may be required.');
+      } else {
+        // Successful sign in: return to AuthGate (root) so it rebuilds and shows HomeShell.
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      }
     } on AuthException catch (e) {
       setState(() => _error = _friendlyAuthError(e));
+    } on TimeoutException catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
       setState(() => _error = 'Unexpected error: $e');
     } finally {
@@ -54,13 +69,27 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
       return;
     }
     try {
-      await Supabase.instance.client.auth.signUp(
-        email: email,
-        password: password,
-      );
-      setState(() => _info = 'Account created. Verify email if required.');
+      final stopwatch = Stopwatch()..start();
+      final response = await Supabase.instance.client.auth
+          .signUp(email: email, password: password)
+          .timeout(const Duration(seconds: 20), onTimeout: () {
+        throw TimeoutException('Sign-up timed out. Check connection.');
+      });
+      stopwatch.stop();
+      debugPrint('[Auth] Sign up completed in ${stopwatch.elapsedMilliseconds}ms; user: ${response.user != null}; session: ${response.session != null}');
+      if (response.session != null) {
+        setState(() => _info = 'Account created & signed in as ${response.user!.email}');
+        // Navigate back to root; AuthGate will detect session and show HomeShell.
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } else {
+        setState(() => _info = 'Account created. Please verify your email before signing in.');
+      }
     } on AuthException catch (e) {
       setState(() => _error = _friendlyAuthError(e));
+    } on TimeoutException catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
       setState(() => _error = 'Unexpected error: $e');
     } finally {
@@ -167,9 +196,23 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
                     )
                   : const Text('Sign in'),
             ),
-            TextButton(
-              onPressed: _loading ? null : _signUp,
-              child: const Text('Create account'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: _loading ? null : _signUp,
+                  child: const Text('Create account'),
+                ),
+                if (_loading)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8.0),
+                    child: SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
