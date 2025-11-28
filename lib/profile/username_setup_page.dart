@@ -77,16 +77,13 @@ class _UsernameSetupPageState extends State<UsernameSetupPage> {
       // Upsert profile with unique username, with a safety timeout.
       await client
           .from('profiles')
-          .upsert({
-            'id': user.id,
-            'username': username,
-          }, onConflict: 'id')
+          .upsert({'id': user.id, 'username': username}, onConflict: 'id')
           .timeout(const Duration(seconds: 15));
       if (mounted) {
         // Move out of setup to main home.
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ChatHome()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const ChatHome()));
       }
     } on PostgrestException catch (e) {
       setState(() {

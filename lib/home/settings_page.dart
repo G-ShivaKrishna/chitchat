@@ -24,7 +24,9 @@ class SettingsPage extends StatelessWidget {
             'Tap to edit profile',
             style: TextStyle(color: Colors.white70),
           ),
-          onTap: () {},
+          onTap: () {
+            Navigator.of(context).pushNamed('/profile');
+          },
         ),
         const Divider(color: Colors.white24),
         ListTile(

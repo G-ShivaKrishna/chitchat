@@ -8,6 +8,7 @@ import 'home/calls_page.dart';
 import 'home/settings_page.dart';
 import 'profile/username_setup_page.dart';
 import 'home/user_search_page.dart';
+import 'profile/profile_edit_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
         '/email': (_) => const EmailAuthPage(),
         '/username': (_) => const UsernameSetupPage(),
         '/search': (_) => const UserSearchPage(),
+        '/profile': (_) => const ProfileEditPage(),
       },
     );
   }
@@ -115,7 +117,8 @@ class _ProfileGateState extends State<_ProfileGate> {
       setState(() {
         _hasUsername = false;
         _loading = false;
-        _error = 'Could not read your profile. Check Supabase RLS policies for table "profiles".';
+        _error =
+            'Could not read your profile. Check Supabase RLS policies for table "profiles".';
       });
     }
   }
