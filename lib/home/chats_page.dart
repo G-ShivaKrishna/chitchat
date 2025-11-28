@@ -5,10 +5,18 @@ class ChatsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mockChats = List.generate(12, (i) => ChatPreview('Contact $i', 'Last message snippet $i', DateTime.now().subtract(Duration(minutes: i * 7))));
+    final mockChats = List.generate(
+      12,
+      (i) => ChatPreview(
+        'Contact $i',
+        'Last message snippet $i',
+        DateTime.now().subtract(Duration(minutes: i * 7)),
+      ),
+    );
     return ListView.separated(
       itemCount: mockChats.length,
-      separatorBuilder: (_, __) => const Divider(height: 0, color: Colors.white10),
+      separatorBuilder: (_, __) =>
+          const Divider(height: 0, color: Colors.white10),
       itemBuilder: (context, index) {
         final chat = mockChats[index];
         return ListTile(
@@ -17,8 +25,14 @@ class ChatsPage extends StatelessWidget {
             child: Text(chat.name.substring(0, 1)),
           ),
           title: Text(chat.name, style: const TextStyle(color: Colors.white)),
-          subtitle: Text(chat.lastMessage, style: const TextStyle(color: Colors.white70)),
-          trailing: Text(_formatTime(chat.time), style: const TextStyle(color: Colors.white60, fontSize: 12)),
+          subtitle: Text(
+            chat.lastMessage,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          trailing: Text(
+            _formatTime(chat.time),
+            style: const TextStyle(color: Colors.white60, fontSize: 12),
+          ),
           onTap: () {},
         );
       },

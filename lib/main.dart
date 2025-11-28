@@ -80,7 +80,8 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMixin {
+class _HomeShellState extends State<HomeShell>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override

@@ -16,8 +16,14 @@ class SettingsPage extends StatelessWidget {
         const SizedBox(height: 16),
         ListTile(
           leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text(user?.email ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-          subtitle: const Text('Tap to edit profile', style: TextStyle(color: Colors.white70)),
+          title: Text(
+            user?.email ?? 'Unknown',
+            style: const TextStyle(color: Colors.white),
+          ),
+          subtitle: const Text(
+            'Tap to edit profile',
+            style: TextStyle(color: Colors.white70),
+          ),
           onTap: () {},
         ),
         const Divider(color: Colors.white24),
@@ -28,12 +34,18 @@ class SettingsPage extends StatelessWidget {
         ),
         ListTile(
           leading: const Icon(Icons.color_lens, color: Colors.white70),
-          title: const Text('Appearance', style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Appearance',
+            style: TextStyle(color: Colors.white),
+          ),
           onTap: () {},
         ),
         ListTile(
           leading: const Icon(Icons.storage, color: Colors.white70),
-          title: const Text('Storage & Data', style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Storage & Data',
+            style: TextStyle(color: Colors.white),
+          ),
           onTap: () {},
         ),
         ListTile(
@@ -44,7 +56,10 @@ class SettingsPage extends StatelessWidget {
         const Divider(color: Colors.white24),
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.redAccent),
-          title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+          title: const Text(
+            'Logout',
+            style: TextStyle(color: Colors.redAccent),
+          ),
           onTap: _signOut,
         ),
       ],

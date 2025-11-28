@@ -32,13 +32,21 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
       final stopwatch = Stopwatch()..start();
       final response = await Supabase.instance.client.auth
           .signInWithPassword(email: email, password: password)
-          .timeout(const Duration(seconds: 15), onTimeout: () {
-        throw TimeoutException('Sign-in timed out. Check connection.');
-      });
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw TimeoutException('Sign-in timed out. Check connection.');
+            },
+          );
       stopwatch.stop();
-      debugPrint('[Auth] Sign in completed in ${stopwatch.elapsedMilliseconds}ms; session: ${response.session != null}');
+      debugPrint(
+        '[Auth] Sign in completed in ${stopwatch.elapsedMilliseconds}ms; session: ${response.session != null}',
+      );
       if (response.session == null) {
-        setState(() => _info = 'Signed in, but no session. Email confirmation may be required.');
+        setState(
+          () => _info =
+              'Signed in, but no session. Email confirmation may be required.',
+        );
       } else {
         // Successful sign in: return to AuthGate (root) so it rebuilds and shows HomeShell.
         if (mounted) {
@@ -72,19 +80,30 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
       final stopwatch = Stopwatch()..start();
       final response = await Supabase.instance.client.auth
           .signUp(email: email, password: password)
-          .timeout(const Duration(seconds: 20), onTimeout: () {
-        throw TimeoutException('Sign-up timed out. Check connection.');
-      });
+          .timeout(
+            const Duration(seconds: 20),
+            onTimeout: () {
+              throw TimeoutException('Sign-up timed out. Check connection.');
+            },
+          );
       stopwatch.stop();
-      debugPrint('[Auth] Sign up completed in ${stopwatch.elapsedMilliseconds}ms; user: ${response.user != null}; session: ${response.session != null}');
+      debugPrint(
+        '[Auth] Sign up completed in ${stopwatch.elapsedMilliseconds}ms; user: ${response.user != null}; session: ${response.session != null}',
+      );
       if (response.session != null) {
-        setState(() => _info = 'Account created & signed in as ${response.user!.email}');
+        setState(
+          () =>
+              _info = 'Account created & signed in as ${response.user!.email}',
+        );
         // Navigate back to root; AuthGate will detect session and show HomeShell.
         if (mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } else {
-        setState(() => _info = 'Account created. Please verify your email before signing in.');
+        setState(
+          () => _info =
+              'Account created. Please verify your email before signing in.',
+        );
       }
     } on AuthException catch (e) {
       setState(() => _error = _friendlyAuthError(e));
