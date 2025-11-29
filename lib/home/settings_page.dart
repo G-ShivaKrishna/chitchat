@@ -10,7 +10,8 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
     return ListView(
       children: [
         const SizedBox(height: 16),
@@ -24,8 +25,24 @@ class SettingsPage extends StatelessWidget {
             'Tap to edit profile',
             style: TextStyle(color: Colors.white70),
           ),
-          onTap: () {
-            Navigator.of(context).pushNamed('/profile');
+          onTap: () async {
+            // Ensure user has a profile with username set; otherwise open username setup.
+            if (user == null) return;
+            try {
+              final row = await client
+                  .from('profiles')
+                  .select('username')
+                  .eq('id', user.id)
+                  .maybeSingle();
+              final uname = row != null ? (row['username'] as String?) : null;
+              if (uname == null || uname.trim().isEmpty) {
+                Navigator.of(context).pushNamed('/username');
+              } else {
+                Navigator.of(context).pushNamed('/profile');
+              }
+            } catch (_) {
+              Navigator.of(context).pushNamed('/username');
+            }
           },
         ),
         const Divider(color: Colors.white24),

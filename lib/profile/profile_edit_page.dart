@@ -57,7 +57,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       _nameController.text = (row?['display_name'] as String?) ?? '';
       _aboutController.text =
           (row?['about'] as String?) ?? _aboutController.text;
-      _avatarUrl = row?['avatar_url'] as String?;
+      _avatarUrl = await _toDisplayUrl(row?['avatar_url'] as String?);
       setState(() {
         _loading = false;
       });
@@ -90,23 +90,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final mime = lookupMimeType(file.name) ?? 'image/jpeg';
 
     try {
-      await client.storage
-          .from('avatars')
-          .uploadBinary(
+      // Remember current avatar path for cleanup after successful upload.
+      final oldPath = _extractPathFromPublicUrl(_avatarUrl);
+      await client.storage.from('avatars').uploadBinary(
             path,
             bytes,
             fileOptions: FileOptions(contentType: mime, upsert: true),
           );
       final publicUrl = client.storage.from('avatars').getPublicUrl(path);
+      final displayUrl = await _toDisplayUrl(publicUrl);
       setState(() {
-        _avatarUrl = publicUrl;
+        _avatarUrl = displayUrl;
       });
       // Persist avatar_url immediately to the user's profile.
       final exists = await _profileExists(user.id);
       if (exists) {
         await client
-            .from('profiles')
-            .update({'avatar_url': publicUrl})
+          .from('profiles')
+          .update({'avatar_url': publicUrl})
             .eq('id', user.id);
       } else {
         if (_username == null || _username!.trim().isEmpty) {
@@ -130,6 +131,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Avatar updated')));
       }
+
+      // After successfully updating, delete the previous avatar file if it exists.
+      if (oldPath != null && oldPath != path) {
+        try {
+          await client.storage.from('avatars').remove([oldPath]);
+        } catch (_) {
+          // Non-fatal cleanup error; ignore.
+        }
+      }
     } on StorageException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -142,6 +152,21 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           context,
         ).showSnackBar(SnackBar(content: Text('Avatar upload failed: $e')));
       }
+    }
+  }
+  Future<String?> _toDisplayUrl(String? storedUrl) async {
+    if (storedUrl == null) return null;
+    // If bucket is private or CDN caching causes issues on web, use a signed URL.
+    final client = Supabase.instance.client;
+    final path = _extractPathFromPublicUrl(storedUrl);
+    if (path == null) return storedUrl;
+    try {
+      final signed = await client.storage
+          .from('avatars')
+          .createSignedUrl(path, 3600); // 1 hour
+      return signed;
+    } catch (_) {
+      return storedUrl; // fallback to public URL
     }
   }
 
@@ -165,6 +190,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     return name.substring(dot + 1);
   }
 
+  // Extract '<uid>/<filename>' from public avatar URL
+  String? _extractPathFromPublicUrl(String? url) {
+    if (url == null) return null;
+    const marker = '/storage/v1/object/public/avatars/';
+    final i = url.indexOf(marker);
+    if (i == -1) return null;
+    return url.substring(i + marker.length);
+  }
+
   Future<void> _save() async {
     setState(() {
       _saving = true;
@@ -181,15 +215,35 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
 
     try {
-      await client
-          .from('profiles')
-          .upsert({
-            'id': user.id,
-            'display_name': _nameController.text.trim(),
-            'about': _aboutController.text.trim(),
-            if (_avatarUrl != null) 'avatar_url': _avatarUrl,
-          }, onConflict: 'id')
-          .timeout(const Duration(seconds: 15));
+      final exists = await _profileExists(user.id);
+      if (exists) {
+        await client
+            .from('profiles')
+            .update({
+              'display_name': _nameController.text.trim(),
+              'about': _aboutController.text.trim(),
+              if (_avatarUrl != null) 'avatar_url': _avatarUrl,
+            })
+            .eq('id', user.id)
+            .timeout(const Duration(seconds: 15));
+      } else {
+        if (_username == null || _username!.trim().isEmpty) {
+          setState(() {
+            _error = 'Set a username first before saving profile.';
+          });
+          return;
+        }
+        await client
+            .from('profiles')
+            .insert({
+              'id': user.id,
+              'username': _username,
+              'display_name': _nameController.text.trim(),
+              'about': _aboutController.text.trim(),
+              if (_avatarUrl != null) 'avatar_url': _avatarUrl,
+            })
+            .timeout(const Duration(seconds: 15));
+      }
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -219,6 +273,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF111B21),
         title: const Text('Edit Profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Cancel',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
@@ -330,6 +389,31 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     maxLines: 2,
                     style: const TextStyle(color: Colors.white),
                     decoration: _inputDecoration(),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _saving ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366),
+                          foregroundColor: Colors.black,
+                        ),
+                        child: _saving
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Save'),
+                      ),
+                    ],
                   ),
                 ],
               ),
