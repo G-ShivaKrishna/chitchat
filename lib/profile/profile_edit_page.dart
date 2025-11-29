@@ -101,6 +101,35 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       setState(() {
         _avatarUrl = publicUrl;
       });
+      // Persist avatar_url immediately to the user's profile.
+      final exists = await _profileExists(user.id);
+      if (exists) {
+        await client
+            .from('profiles')
+            .update({'avatar_url': publicUrl})
+            .eq('id', user.id);
+      } else {
+        if (_username == null || _username!.trim().isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Set a username first before adding an avatar.'),
+              ),
+            );
+          }
+        } else {
+          await client.from('profiles').insert({
+            'id': user.id,
+            'username': _username,
+            'avatar_url': publicUrl,
+          });
+        }
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Avatar updated')));
+      }
     } on StorageException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -113,6 +142,20 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           context,
         ).showSnackBar(SnackBar(content: Text('Avatar upload failed: $e')));
       }
+    }
+  }
+
+  Future<bool> _profileExists(String userId) async {
+    final client = Supabase.instance.client;
+    try {
+      final row = await client
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+      return row != null;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -212,18 +255,33 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       children: [
                         CircleAvatar(
                           radius: 48,
-                          backgroundImage: _avatarUrl != null
-                              ? NetworkImage(_avatarUrl!)
-                              : null,
-                          child: _avatarUrl == null
-                              ? const Icon(Icons.person, size: 48)
-                              : null,
+                          backgroundColor: const Color(0xFF1F2C33),
+                          child: ClipOval(
+                            child: _avatarUrl != null
+                                ? Image.network(
+                                    _avatarUrl!,
+                                    width: 96,
+                                    height: 96,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stack) {
+                                      return const Icon(
+                                        Icons.person,
+                                        size: 48,
+                                        color: Colors.white70,
+                                      );
+                                    },
+                                  )
+                                : const Icon(Icons.person, size: 48),
+                          ),
                         ),
                         Positioned(
                           right: 0,
                           bottom: 0,
                           child: FloatingActionButton.small(
-                            onPressed: _pickAndUploadAvatar,
+                            onPressed:
+                                (_username == null || _username!.trim().isEmpty)
+                                ? null
+                                : _pickAndUploadAvatar,
                             backgroundColor: const Color(0xFF25D366),
                             child: const Icon(
                               Icons.camera_alt,
@@ -235,6 +293,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  if (_username == null || _username!.trim().isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.orangeAccent.withOpacity(0.4),
+                        ),
+                      ),
+                      child: const Text(
+                        'Set your username first to enable avatar uploads.',
+                        style: TextStyle(color: Colors.orangeAccent),
+                      ),
+                    ),
+                  if (_username == null || _username!.trim().isEmpty)
+                    const SizedBox(height: 12),
                   _label('Email (read-only)'),
                   _roText(_email ?? ''),
                   const SizedBox(height: 16),
