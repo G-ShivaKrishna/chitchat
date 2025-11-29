@@ -92,7 +92,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     try {
       // Remember current avatar path for cleanup after successful upload.
       final oldPath = _extractPathFromPublicUrl(_avatarUrl);
-      await client.storage.from('avatars').uploadBinary(
+      await client.storage
+          .from('avatars')
+          .uploadBinary(
             path,
             bytes,
             fileOptions: FileOptions(contentType: mime, upsert: true),
@@ -106,8 +108,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       final exists = await _profileExists(user.id);
       if (exists) {
         await client
-          .from('profiles')
-          .update({'avatar_url': publicUrl})
+            .from('profiles')
+            .update({'avatar_url': publicUrl})
             .eq('id', user.id);
       } else {
         if (_username == null || _username!.trim().isEmpty) {
@@ -154,6 +156,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       }
     }
   }
+
   Future<String?> _toDisplayUrl(String? storedUrl) async {
     if (storedUrl == null) return null;
     // If bucket is private or CDN caching causes issues on web, use a signed URL.
@@ -408,8 +411,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             ? const SizedBox(
                                 height: 16,
                                 width: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Save'),
                       ),
